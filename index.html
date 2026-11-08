@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#090b12">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<title>Flow Motion — Editor</title>
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{--bg:#090b12;--panel:#111522;--panel2:#171d2d;--line:#252d40;--text:#edf1ff;--muted:#8993ad;--accent:#8a72ff;--cyan:#42d7dc;--radius:13px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 Inter,system-ui,Segoe UI,Arial,sans-serif}
+button,input,select{font:inherit}button{border:1px solid var(--line);background:#1b2233;color:var(--text);border-radius:9px;padding:8px 11px;cursor:pointer}button:active{transform:scale(.98)}button.primary{background:linear-gradient(135deg,#7662ed,#4c9bdc);border:0}button.active{border-color:var(--accent);color:#c9c0ff}
+.top{height:58px;display:flex;align-items:center;gap:12px;padding:0 14px;border-bottom:1px solid var(--line);background:#0d111b;position:sticky;top:0;z-index:5}
+.brand{display:flex;align-items:center;gap:9px;font-weight:750;letter-spacing:.3px}.brand img{width:46px;height:46px;object-fit:contain}.brand small{display:block;color:var(--muted);font-size:10px;font-weight:500;letter-spacing:1.5px}
+.topright{margin-left:auto;display:flex;gap:7px;align-items:center}.pill{font-size:11px;color:#aab5d1;border:1px solid var(--line);padding:6px 9px;border-radius:99px}
+.layout{display:grid;grid-template-columns:66px minmax(0,1fr) 275px;min-height:calc(100dvh - 58px)}
+.rail{border-right:1px solid var(--line);padding:12px 7px;display:flex;flex-direction:column;gap:8px;background:#0d111b}
+.rail button{padding:10px 4px;display:grid;gap:4px;justify-items:center;font-size:10px;color:var(--muted);background:transparent}.rail button b{font-size:18px;color:var(--text)}
+.center{min-width:0;display:flex;flex-direction:column}
+.stage{padding:15px;display:flex;justify-content:center;align-items:center;min-height:290px;background:radial-gradient(ellipse at center,#1b2233 0%,#0d111a 68%);border-bottom:1px solid var(--line)}
+.previewWrap{width:min(100%,800px);aspect-ratio:16/9;background:#07090e;border:1px solid #333d55;border-radius:8px;overflow:hidden;position:relative;box-shadow:0 16px 50px #0008}
+#preview{width:100%;height:100%;display:block;object-fit:contain}
+.empty{position:absolute;inset:0;display:grid;place-content:center;text-align:center;color:#8792ac;pointer-events:none}.empty strong{font-size:18px;color:#dfe5ff}.empty span{font-size:12px;margin-top:5px}
+.transport{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.timecode{font-variant-numeric:tabular-nums;color:#cdd5ef;min-width:82px}
+.timeline{padding:12px 12px 20px;overflow:auto;flex:1;min-height:260px}
+.tlhead{display:flex;align-items:center;gap:8px;margin-bottom:10px}.tlhead strong{font-size:13px}.tlhead span{color:var(--muted);font-size:11px}
+.ruler{height:25px;position:relative;margin-left:116px;border-bottom:1px solid var(--line);background:repeating-linear-gradient(90deg,transparent 0,transparent 79px,#343d52 80px)}
+.ruler span{position:absolute;top:2px;color:#7f8aa5;font-size:10px}
+.track{display:grid;grid-template-columns:108px minmax(360px,1fr);gap:8px;min-height:46px;margin:6px 0;align-items:center}
+.trackname{color:#aeb8d0;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tracklane{height:38px;background:#0d121e;border:1px solid #202a3c;border-radius:7px;position:relative;min-width:360px}
+.clip{position:absolute;top:4px;height:28px;min-width:42px;border-radius:5px;padding:5px 7px;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:linear-gradient(100deg,#4d3c9d,#286f86);border:1px solid #9382ff;color:white;cursor:pointer}
+.clip.selected{outline:2px solid #e0d9ff;outline-offset:1px}.clip{touch-action:none;user-select:none}.clip .trim{position:absolute;top:0;bottom:0;width:9px;background:#ffffff33;cursor:ew-resize}.clip .trim.left{left:0;border-radius:5px 0 0 5px}.clip .trim.right{right:0;border-radius:0 5px 5px 0}.clip .cliplabel{display:block;overflow:hidden;padding:0 7px}.timelineTools{display:flex;align-items:center;gap:6px;margin:8px 0}.timelineTools button{padding:5px 9px}.timelineScroll{overflow:auto;position:relative;min-height:160px}.timelineInner{position:relative;min-width:600px}.track{grid-template-columns:108px minmax(0,1fr)}.tracklane{min-width:0}.ruler{margin-left:116px;min-width:600px;cursor:crosshair}.trackname{display:flex;align-items:center;gap:4px}.trackname button{padding:2px 5px;font-size:10px}.playline{pointer-events:none}.timelineTools input{width:110px;accent-color:var(--accent)}.clip.audio{background:linear-gradient(100deg,#176b70,#287c87);border-color:#52d4d4}.clip.video{background:linear-gradient(100deg,#3c579d,#286f86)}.clip.text{background:linear-gradient(100deg,#60429c,#8b4f9c)}
+.playline{position:absolute;top:-25px;bottom:-7px;width:2px;background:#ffcb67;z-index:3;pointer-events:none}
+.playline:before{content:"";position:absolute;top:0;left:-4px;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid #ffcb67}
+.inspector{border-left:1px solid var(--line);background:#0e121d;padding:14px;overflow:auto}
+.inspector h3{font-size:13px;margin:0 0 13px}.section{border-bottom:1px solid var(--line);padding:0 0 14px;margin-bottom:14px}
+.field{display:grid;grid-template-columns:1fr 95px;align-items:center;gap:8px;margin:9px 0;color:#aab4cc;font-size:12px}
+.field input,.field select{width:100%;min-width:0;background:#171e2d;color:var(--text);border:1px solid #2a354b;border-radius:7px;padding:7px}
+.field input[type=range]{padding:0;accent-color:var(--accent)}
+.row{display:flex;gap:7px;flex-wrap:wrap}.row>*{flex:1}
+.muted{color:var(--muted);font-size:11px}.keyrow{display:flex;align-items:center;justify-content:space-between;margin-top:9px}
+.badge{font-size:10px;color:#9de8e9;background:#123239;padding:4px 7px;border-radius:99px}
+.bottomnote{padding:8px 13px;color:#75819d;font-size:10px;border-top:1px solid var(--line)}
+input[type=file]{display:none}
+@media(max-width:850px){.layout{grid-template-columns:54px minmax(0,1fr)}.inspector{grid-column:2;border-left:0;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.inspector>h3{grid-column:1/-1}.section{min-width:0}.stage{min-height:220px;padding:9px}.top .pill{display:none}}
+@media(max-width:520px){.layout{grid-template-columns:48px minmax(0,1fr)}.rail{padding:8px 3px}.rail button{font-size:9px;padding:9px 2px}.inspector{display:block}.top{padding:0 9px}.brand{font-size:13px}.topright button{padding:7px}.stage{min-height:190px}.timeline{padding:10px 8px}.track{grid-template-columns:78px minmax(300px,1fr)}.ruler{margin-left:86px}}
+
+/* Core timeline v0.3 interaction and mobile polish */
+.topright input[type=file]{display:none}
+.timelineScroll{overscroll-behavior:contain;scrollbar-color:#3a4560 #0b101a;scrollbar-width:thin}
+.timelineInner{min-height:100px;padding-bottom:4px}
+.ruler{touch-action:pan-y;user-select:none;background-image:repeating-linear-gradient(90deg,transparent 0,transparent 19px,#252d40 20px)}
+.tracklane{user-select:none}
+.clip{min-width:18px;touch-action:none;overflow:visible}
+.cliplabel{pointer-events:none;text-overflow:ellipsis;white-space:nowrap;overflow:hidden}
+.clip .trim{width:14px;z-index:2;touch-action:none}
+.clip .trim.left{left:0}.clip .trim.right{right:0}
+.keyMark{position:absolute;top:9px;width:8px;height:8px;background:#fff2a8;border:1px solid #fff;border-radius:1px;transform:translateX(-50%) rotate(45deg);z-index:1;pointer-events:none;box-shadow:0 0 5px #fff7}
+.playline{pointer-events:none;z-index:4}
+.playheadHandle{position:absolute;top:-25px;left:-10px;width:22px;height:23px;padding:0;border:0;border-radius:5px 5px 2px 2px;background:#ffcb67;clip-path:polygon(0 0,100% 0,100% 72%,50% 100%,0 72%);pointer-events:auto;touch-action:none;cursor:ew-resize;box-shadow:0 0 0 1px #151a25}
+.playheadHandle:active{transform:scale(1.08)}
+.timelineTools button:disabled{opacity:.35;cursor:default}
+.timelineTools button:disabled:active{transform:none}
+.clip.selected{z-index:2}
+.trackname span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+@media(max-width:520px){
+  .topright{gap:4px}.topright button{font-size:11px;padding:6px 7px}.topright .pill{display:none}
+  .clip .trim{width:16px}
+  .playheadHandle{width:26px;left:-12px;height:25px}
+  .timelineTools{flex-wrap:wrap}.timelineTools input{flex:1;min-width:75px}
+}
+
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><img src="assets/flow-motion-logo.png" alt="Flow Motion official logo"><div>FLOW MOTION<small>CREATE BEYOND THE FRAME</small></div></div>
+  <div class="topright"><span class="pill" id="projectLabel">Untitled Project</span><button id="openProjectBtn">Open</button><button id="saveBtn">Save</button><button class="primary" id="exportBtn">Export JSON</button><input id="projectFileInput" type="file" accept="application/json,.json" hidden></div>
+</header>
+<div class="layout">
+  <nav class="rail">
+    <button class="active" data-panel="media"><b>▧</b>Media</button>
+    <button data-panel="text"><b>T</b>Text</button>
+    <button data-panel="effects"><b>✧</b>Effects</button>
+    <button data-panel="mask"><b>◩</b>Mask</button>
+    <button data-panel="motion"><b>◇</b>Motion</button>
+    <button data-panel="three"><b>⬡</b>3D</button>
+  </nav>
+  <main class="center">
+    <section class="stage">
+      <div class="previewWrap">
+        <canvas id="preview" width="1280" height="720"></canvas>
+        <div class="empty" id="emptyState"><strong>Your canvas is ready.</strong><span>Import media or add a text layer to start creating.</span></div>
+      </div>
+    </section>
+    <div class="transport">
+      <button id="playBtn">▶ Play</button><button id="stopBtn">■</button>
+      <span class="timecode" id="timecode">00:00:00:00</span>
+      <span class="muted">Project FPS</span><select id="fps"><option>24</option><option selected>30</option><option>60</option><option>120</option></select>
+      <span class="muted">Canvas</span><select id="resolution"><option value="1280x720">720p</option><option value="1920x1080" selected>1080p</option><option value="1080x1920">1080×1920</option><option value="1080x1080">1080×1080</option></select>
+      <button id="addText">＋ Text</button><button id="importBtn">＋ Import</button>
+      <input id="fileInput" type="file" accept="image/*,video/*,audio/*" multiple>
+    </div>
+    <section class="timeline">
+      <div class="tlhead"><strong>Timeline</strong><span>Layers · Keyframes · Timing</span><button id="addLayerBtn" style="margin-left:auto">＋ Layer</button></div>
+      <div class="timelineTools"><button id="undoBtn" title="Undo">↶</button><button id="redoBtn" title="Redo">↷</button><button id="splitBtn">Split at playhead</button><button id="zoomOut">−</button><input id="zoom" type="range" min="20" max="240" value="60" aria-label="Timeline zoom"><button id="zoomIn">＋</button><span class="muted" id="zoomLabel">60 px/s</span></div><div class="timelineScroll" id="timelineScroll"><div class="timelineInner" id="timelineInner"><div class="ruler" id="ruler"></div><div id="tracks"></div><div class="playline" id="playline"><button class="playheadHandle" id="playheadHandle" aria-label="Drag playhead" title="Drag playhead"></button></div></div></div>
+      <div class="muted">Drag clips to move · drag clip edges to trim · tap or drag the ruler to scrub · split at the playhead.</div>
+    </section>
+    <div class="bottomnote">FLOW MOTION · Core timeline v0.3 · Project metadata is stored locally in this browser.</div>
+  </main>
+  <aside class="inspector">
+    <h3>Inspector <span class="badge" id="selectedBadge">No selection</span></h3>
+    <div class="section">
+      <h3>Layer</h3>
+      <div class="field"><label>Name</label><input id="layerName" value="" placeholder="Layer name"></div>
+      <div class="field"><label>Type</label><input id="layerType" value="—" disabled></div>
+      <div class="row"><button id="duplicateBtn">Duplicate</button><button id="deleteBtn">Delete</button></div>
+    </div>
+    <div class="section">
+      <h3>Transform</h3>
+      <div class="field"><label>Position X</label><input id="x" type="number" value="640"></div>
+      <div class="field"><label>Position Y</label><input id="y" type="number" value="360"></div>
+      <div class="field"><label>Scale</label><input id="scale" type="number" min="1" max="500" value="100"></div>
+      <div class="field"><label>Rotation</label><input id="rotation" type="number" value="0"></div>
+      <div class="field"><label>Opacity</label><input id="opacity" type="range" min="0" max="100" value="100"></div>
+      <div class="keyrow"><span class="muted">Animate transform at playhead</span><button id="keyBtn">◇ Add key</button></div>
+    </div>
+    <div class="section">
+      <h3>Timing</h3>
+      <div class="field"><label>Start (seconds)</label><input id="start" type="number" min="0" step=".1" value="0"></div>
+      <div class="field"><label>Duration (seconds)</label><input id="duration" type="number" min=".1" step=".1" value="8"></div>
+      <div class="field"><label>Speed</label><input id="speed" type="number" min=".1" max="8" step=".1" value="1"></div>
+      <div class="field"><label>Interpolation</label><select id="interpolation"><option value="none">Off / None</option><option value="linear" selected>Linear</option><option value="bezier">Bezier (planned)</option><option value="frame">Frame Blending (planned)</option><option value="optical">Optical Flow (planned)</option></select></div>
+    </div>
+    <div class="section">
+      <h3>Compositing</h3>
+      <div class="field"><label>Blend mode</label><select id="blend"><option>Normal</option><option>Multiply</option><option>Screen</option><option>Overlay</option><option>Add</option><option>Difference</option></select></div>
+      <div class="field"><label>Blend strength</label><input id="blendStrength" type="range" min="0" max="100" value="100"></div>
+      <p class="muted">Masks, rotoscoping, vector tools, effects, 3D cameras, nulls and pivot-aware motion blur are in the planned engine roadmap.</p>
+    </div>
+  </aside>
+</div>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const canvas = $('preview');
+const ctx = canvas.getContext('2d');
+const STORAGE_KEYS = ['flow-motion-project-v3','flow-motion-project-v2','flow-motion-project'];
+const DEFAULT_PROJECT = {id:'fm-'+Date.now().toString(36),name:'Untitled Project',fps:30,width:1920,height:1080,duration:20,version:3};
+let project = {...DEFAULT_PROJECT};
+let layers = [];
+let selected = null;
+let playheadFrame = 0;
+let playing = false;
+let playStartAt = 0;
+let playStartFrame = 0;
+let raf = 0;
+let zoom = 60;
+let history = [];
+let historyIndex = -1;
+let dragState = null;
+let scrubState = null;
+const assets = new Map();
+const memoryStorage = new Map();
+function storageGet(key){try{return window.localStorage.getItem(key);}catch(error){return memoryStorage.get(key)||null;}}
+function storageSet(key,value){try{window.localStorage.setItem(key,value);return true;}catch(error){memoryStorage.set(key,value);return false;}}
+const clamp = (v,min,max) => Math.max(min,Math.min(max,v));
+const finite = (v,fallback=0) => Number.isFinite(Number(v)) ? Number(v) : fallback;
+const clone = value => JSON.parse(JSON.stringify(value));
+const fps = () => project.fps;
+const time = () => playheadFrame / fps();
+const current = () => layers.find(layer => layer.id === selected) || null;
+const uid = () => 'L'+(globalThis.crypto?.getRandomValues ? crypto.getRandomValues(new Uint32Array(1))[0] : Math.floor(Math.random()*1e9)).toString(36);
+
+function normalizeKey(key, fallbackFrame=0) {
+  const frame = key.frame == null ? Math.round(finite(key.t,0)*fps()) : Math.max(0,Math.round(finite(key.frame,fallbackFrame)));
+  return {frame,x:finite(key.x,0),y:finite(key.y,0),scale:finite(key.scale,100),rotation:finite(key.rotation,0),opacity:clamp(finite(key.opacity,100),0,100)};
+}
+function normalizeLayer(raw) {
+  const start = Math.max(0,finite(raw.start,0));
+  const duration = Math.max(1/fps(),finite(raw.duration,8));
+  const rawKeys = Array.isArray(raw.keys) ? raw.keys : [];
+  const keyMap = new Map();
+  rawKeys.map(k=>normalizeKey(k)).sort((a,b)=>a.frame-b.frame).forEach(k=>keyMap.set(k.frame,k));
+  return {
+    id:String(raw.id || uid()), type:['image','video','audio','text','shape'].includes(raw.type)?raw.type:'text',
+    name:String(raw.name || 'Layer'), start, duration, sourceIn:Math.max(0,finite(raw.sourceIn,0)),
+    speed:Math.max(.01,finite(raw.speed,1)), x:finite(raw.x,project.width/2), y:finite(raw.y,project.height/2),
+    scale:finite(raw.scale,100), rotation:finite(raw.rotation,0), opacity:clamp(finite(raw.opacity,100),0,100),
+    blend:String(raw.blend || 'Normal'), blendStrength:clamp(finite(raw.blendStrength,100),0,100),
+    interpolation:String(raw.interpolation || 'linear'), keys:[...keyMap.values()], text:String(raw.text || ''),
+    assetId:raw.assetId || null, media:raw.media ? clone(raw.media) : null,
+    visible:raw.visible !== false, muted:!!raw.muted, locked:!!raw.locked
+  };
+}
+function layerStartFrame(layer){return Math.round(layer.start*fps())}
+function layerEndFrame(layer){return layerStartFrame(layer)+Math.max(1,Math.round(layer.duration*fps()))}
+function ensureProjectDuration(){
+  const end = layers.reduce((max,l)=>Math.max(max,l.start+l.duration),20);
+  project.duration = Math.max(20,Math.ceil(end));
+}
+function snapshot(){return {layers:layers.map(normalizeLayer),selected,playheadFrame,project:clone(project),zoom};}
+function commit(){
+  const snap=snapshot();
+  const previous=history[historyIndex];
+  if(previous && JSON.stringify(previous)===JSON.stringify(snap)) return;
+  history=history.slice(0,historyIndex+1);
+  history.push(snap);
+  if(history.length>100) history.shift();
+  historyIndex=history.length-1;
+  updateHistoryButtons();
+}
+function syncProjectControls(){
+  $('fps').value=String(project.fps);
+  $('resolution').value=`${project.width}x${project.height}`;
+  canvas.width=project.width; canvas.height=project.height;
+  $('zoom').value=String(zoom);
+  $('projectLabel').textContent=project.name || 'Untitled Project';
+}
+function restore(state){
+  project={...DEFAULT_PROJECT,...clone(state.project),version:3};
+  layers=state.layers.map(l=>({...normalizeLayer(l),element:assets.get(l.assetId)||null}));
+  selected=layers.some(l=>l.id===state.selected)?state.selected:(layers[0]?.id||null);
+  playheadFrame=clamp(Math.round(finite(state.playheadFrame,0)),0,Math.round(project.duration*fps()));
+  zoom=clamp(finite(state.zoom,60),20,240);
+  ensureProjectDuration(); syncProjectControls(); renderAll(); updateHistoryButtons();
+}
+function undo(){if(historyIndex>0){historyIndex--;restore(history[historyIndex]);}}
+function redo(){if(historyIndex<history.length-1){historyIndex++;restore(history[historyIndex]);}}
+function updateHistoryButtons(){$('undoBtn').disabled=historyIndex<=0;$('redoBtn').disabled=historyIndex>=history.length-1;}
+function makeLayer(type,name,element=null,file=null){
+  const id=uid(),assetId=file?'asset-'+id:null;
+  const media=file?{name:file.name,mimeType:file.type,size:file.size,lastModified:file.lastModified||0}:null;
+  const layer=normalizeLayer({id,type,name,start:time(),duration:8,x:project.width/2,y:project.height/2,assetId,media,text:type==='text'?'Your text here':''});
+  if(element){layer.element=element;assets.set(assetId,element);}
+  layers.push(layer);selected=id;ensureProjectDuration();commit();renderAll();return layer;
+}
+function keyValues(layer,frame){
+  const base={x:layer.x,y:layer.y,scale:layer.scale,rotation:layer.rotation,opacity:layer.opacity};
+  const keys=[...layer.keys].sort((a,b)=>a.frame-b.frame);
+  if(!keys.length) return base;
+  if(frame<=keys[0].frame) return {...base,...keys[0]};
+  if(frame>=keys[keys.length-1].frame) return {...base,...keys[keys.length-1]};
+  let a=keys[0],b=keys[keys.length-1];
+  for(let i=0;i<keys.length-1;i++){if(frame>=keys[i].frame && frame<=keys[i+1].frame){a=keys[i];b=keys[i+1];break;}}
+  if(layer.interpolation==='none') return {...base,...a};
+  const amount=(frame-a.frame)/(b.frame-a.frame || 1);
+  const result={...base};
+  for(const prop of ['x','y','scale','rotation','opacity']) result[prop]=a[prop]+(b[prop]-a[prop])*amount;
+  return result;
+}
+function drawMissingMedia(layer){
+  ctx.save();ctx.fillStyle='#151d2b';ctx.strokeStyle='#46516b';ctx.lineWidth=3;
+  ctx.fillRect(-150,-60,300,120);ctx.strokeRect(-150,-60,300,120);
+  ctx.fillStyle='#cbd5ed';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 22px system-ui';
+  ctx.fillText(layer.type.toUpperCase()+' MEDIA',0,-8);ctx.font='14px system-ui';ctx.fillStyle='#8d9ab6';
+  ctx.fillText('Re-import after opening project',0,22);ctx.restore();
+}
+function drawLayer(layer,seconds){
+  if(!layer.visible || seconds<layer.start || seconds>=layer.start+layer.duration) return;
+  const props=keyValues(layer,Math.round(seconds*fps()));
+  ctx.save();ctx.globalAlpha=clamp(props.opacity/100*layer.blendStrength/100,0,1);
+  ctx.translate(props.x/project.width*canvas.width,props.y/project.height*canvas.height);
+  ctx.rotate(props.rotation*Math.PI/180);ctx.scale(props.scale/100,props.scale/100);
+  const element=layer.element||assets.get(layer.assetId);
+  if(layer.type==='image' && element){
+    const w=element.naturalWidth||element.width,h=element.naturalHeight||element.height;
+    if(w>0&&h>0){const ratio=Math.min(900/w,520/h,1);ctx.drawImage(element,-w*ratio/2,-h*ratio/2,w*ratio,h*ratio);}
+  }else if(layer.type==='video' && element && element.readyState>=2){
+    const w=element.videoWidth,h=element.videoHeight;
+    if(w>0&&h>0){const ratio=Math.min(1100/w,620/h,1);ctx.drawImage(element,-w*ratio/2,-h*ratio/2,w*ratio,h*ratio);}
+  }else if(layer.type==='text'){
+    ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 76px system-ui';ctx.shadowColor='#000';ctx.shadowBlur=10;ctx.fillStyle='#fff';ctx.fillText(layer.text||'Text',0,0);
+  }else if(layer.type==='image'||layer.type==='video') drawMissingMedia(layer);
+  ctx.restore();
+}
+function renderPreview(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#090b12';ctx.fillRect(0,0,canvas.width,canvas.height);
+  layers.forEach(layer=>drawLayer(layer,time()));$('emptyState').style.display=layers.length?'none':'grid';
+}
+function formatTC(){
+  const frame=Math.max(0,playheadFrame),rate=fps();
+  const h=Math.floor(frame/(rate*3600)),m=Math.floor(frame/rate/60)%60,s=Math.floor(frame/rate)%60,f=frame%rate;
+  const frameDigits=Math.max(2,String(rate-1).length);
+  return [h,m,s].map(v=>String(v).padStart(2,'0')).join(':')+':'+String(f).padStart(frameDigits,'0');
+}
+function timelineOrigin(){return $('ruler').offsetLeft || 0;}
+function updatePlayline(){
+  $('playline').style.left=(timelineOrigin()+time()*zoom)+'px';
+  $('playline').style.height=Math.max(50,layers.length*52+30)+'px';
+}
+function updateTimecode(){$('timecode').textContent=formatTC();}
+function setPlayhead(frame){
+  playheadFrame=clamp(Math.round(frame),0,Math.round(project.duration*fps()));
+  renderPreview();updateTimecode();updatePlayline();
+}
+function frameFromClientX(clientX,rect){return Math.round(clamp((clientX-rect.left)/zoom,0,project.duration)*fps());}
+function beginScrub(e,source){
+  if(e.pointerType==='mouse' && e.button!==0) return;
+  e.preventDefault();
+  scrubState={pointerId:e.pointerId,source,element:e.currentTarget};
+  try{e.currentTarget.setPointerCapture(e.pointerId);}catch(_){ }
+  const rect=source==='ruler' ? $('ruler').getBoundingClientRect() : source.getBoundingClientRect();
+  setPlayhead(frameFromClientX(e.clientX,rect));
+  document.addEventListener('pointermove',moveScrub);
+  document.addEventListener('pointerup',endScrub,{once:true});
+  document.addEventListener('pointercancel',endScrub,{once:true});
+}
+function moveScrub(e){
+  if(!scrubState || e.pointerId!==scrubState.pointerId) return;
+  const rect=scrubState.source==='ruler' ? $('ruler').getBoundingClientRect() : scrubState.source.getBoundingClientRect();
+  setPlayhead(frameFromClientX(e.clientX,rect));
+}
+function endScrub(e){
+  if(scrubState && (e.pointerId==null || e.pointerId===scrubState.pointerId)) scrubState=null;
+  document.removeEventListener('pointermove',moveScrub);
+  document.removeEventListener('pointerup',endScrub);
+  document.removeEventListener('pointercancel',endScrub);
+}
+function renderRuler(){
+  const ruler=$('ruler');ruler.style.width=(project.duration*zoom)+'px';ruler.innerHTML='';
+  const step=zoom<30?5:zoom<65?2:1;
+  for(let sec=0;sec<=project.duration;sec+=step){
+    const mark=document.createElement('span');mark.textContent=sec+'s';mark.style.left=(sec*zoom+4)+'px';ruler.append(mark);
+  }
+  ruler.onpointerdown=e=>beginScrub(e,'ruler');
+}
+function renderTracks(){
+  const host=$('tracks');host.innerHTML='';const width=project.duration*zoom;
+  layers.forEach((layer,index)=>{
+    const row=document.createElement('div');row.className='track';row.dataset.id=layer.id;
+    const name=document.createElement('div');name.className='trackname';
+    const visibility=document.createElement('button');visibility.textContent=layer.visible?'◉':'○';visibility.title=layer.visible?'Hide layer':'Show layer';visibility.setAttribute('aria-label',visibility.title);
+    visibility.onclick=()=>{layer.visible=!layer.visible;commit();renderAll();};
+    const label=document.createElement('span');label.textContent=(index+1)+'. '+layer.name;label.title=layer.name;label.onclick=()=>{selected=layer.id;renderAll();};
+    name.append(visibility,label);
+    const lane=document.createElement('div');lane.className='tracklane';lane.style.width=width+'px';lane.dataset.id=layer.id;
+    const clip=document.createElement('div');clip.className='clip '+layer.type+(layer.id===selected?' selected':'');clip.dataset.id=layer.id;
+    clip.style.left=(layer.start*zoom)+'px';clip.style.width=Math.max(18,layer.duration*zoom)+'px';clip.title=layer.name+' · '+layer.duration.toFixed(2)+'s';
+    const left=document.createElement('span'),right=document.createElement('span'),labelText=document.createElement('span');
+    left.className='trim left';right.className='trim right';left.title='Trim start';right.title='Trim end';labelText.className='cliplabel';labelText.textContent=layer.name;
+    clip.append(left,labelText,right);
+    layer.keys.forEach(key=>{
+      const keyX=(key.frame/fps()-layer.start)*zoom;
+      if(keyX>=0 && keyX<=layer.duration*zoom){const marker=document.createElement('i');marker.className='keyMark';marker.style.left=keyX+'px';marker.title='Keyframe · '+key.frame+'f';clip.append(marker);}
+    });
+    clip.addEventListener('pointerdown',e=>beginClipDrag(e,layer.id,e.target===left?'left':e.target===right?'right':'move'));
+    lane.append(clip);row.append(name,lane);host.append(row);
+  });
+  host.onpointerdown=e=>{
+    if(e.target.closest('.clip') || e.target.closest('.trackname button') || e.target.closest('.trackname span')) return;
+    const lane=e.target.closest('.tracklane');if(lane) beginScrub(e,lane);
+  };
+  $('timelineInner').style.width=Math.max(600,timelineOrigin()+width+24)+'px';
+  $('zoomLabel').textContent=zoom+' px/s';updatePlayline();
+}
+function renderAll(){renderPreview();renderRuler();renderTracks();fillInspector();updateTimecode();updateHistoryButtons();}
+function fillInspector(){
+  const layer=current();const ids=['layerName','layerType','x','y','scale','rotation','opacity','start','duration','speed','interpolation','blend','blendStrength'];
+  $('selectedBadge').textContent=layer?layer.name:'No selection';ids.forEach(id=>$(id).disabled=!layer);
+  if(!layer){$('layerName').value='';$('layerType').value='—';return;}
+  $('layerName').value=layer.name;$('layerType').value=layer.type;
+  ['x','y','scale','rotation','opacity','start','duration','speed','interpolation','blend','blendStrength'].forEach(k=>$(k).value=layer[k]);
+}
+function beginClipDrag(e,id,mode){
+  if(e.pointerType==='mouse' && e.button!==0) return;
+  e.preventDefault();const layer=layers.find(item=>item.id===id);if(!layer || layer.locked) return;
+  selected=id;
+  dragState={id,mode,pointerId:e.pointerId,startX:e.clientX,original:clone(normalizeLayer(layer)),changed:false,element:e.currentTarget};
+  try{e.currentTarget.setPointerCapture(e.pointerId);}catch(_){ }
+  e.currentTarget.addEventListener('pointermove',moveClipDrag);
+  e.currentTarget.addEventListener('pointerup',endClipDrag,{once:true});
+  e.currentTarget.addEventListener('pointercancel',endClipDrag,{once:true});
+  fillInspector();
+}
+function moveClipDrag(e){
+  if(!dragState || e.pointerId!==dragState.pointerId) return;
+  const layer=layers.find(item=>item.id===dragState.id);if(!layer) return;
+  const original=dragState.original;
+  const deltaFrames=Math.round(((e.clientX-dragState.startX)/zoom)*fps());
+  const originalStart=layerStartFrame(original),originalEnd=layerEndFrame(original);
+  if(dragState.mode==='move'){
+    const nextStart=Math.max(0,originalStart+deltaFrames);layer.start=nextStart/fps();
+    layer.keys=original.keys.map(key=>({...key,frame:Math.max(0,key.frame+(nextStart-originalStart))}));
+  }else if(dragState.mode==='left'){
+    const nextStart=clamp(originalStart+deltaFrames,0,originalEnd-1);
+    layer.start=nextStart/fps();layer.duration=(originalEnd-nextStart)/fps();
+    layer.sourceIn=Math.max(0,original.sourceIn+(nextStart-originalStart)/fps()*original.speed);
+  }else{
+    const nextEnd=Math.max(originalStart+1,originalEnd+deltaFrames);layer.duration=(nextEnd-originalStart)/fps();
+  }
+  dragState.changed=(layer.start!==original.start || layer.duration!==original.duration || layer.sourceIn!==original.sourceIn);
+  const clip=dragState.element;clip.style.left=(layer.start*zoom)+'px';clip.style.width=Math.max(18,layer.duration*zoom)+'px';
+  clip.title=layer.name+' · '+layer.duration.toFixed(2)+'s';
+}
+function endClipDrag(e){
+  if(!dragState || (e.pointerId!=null && e.pointerId!==dragState.pointerId)) return;
+  const state=dragState;dragState=null;
+  if(state.changed){ensureProjectDuration();commit();}
+  renderAll();
+}
+function splitSelected(){
+  const layer=current();if(!layer) return;
+  const cutFrame=playheadFrame,startFrame=layerStartFrame(layer),endFrame=layerEndFrame(layer);
+  if(cutFrame<=startFrame || cutFrame>=endFrame) return;
+  const boundary=keyValues(layer,cutFrame);
+  const boundaryKey={frame:cutFrame,x:boundary.x,y:boundary.y,scale:boundary.scale,rotation:boundary.rotation,opacity:boundary.opacity};
+  const oldKeys=layer.keys.filter(key=>key.frame!==cutFrame);
+  const right=normalizeLayer({...layer,id:uid(),name:layer.name+' (split)',start:cutFrame/fps(),duration:(endFrame-cutFrame)/fps(),sourceIn:layer.sourceIn+(cutFrame-startFrame)/fps()*layer.speed,keys:[boundaryKey,...oldKeys.filter(key=>key.frame>cutFrame)]});
+  right.element=layer.element;layer.duration=(cutFrame-startFrame)/fps();layer.keys=[...oldKeys.filter(key=>key.frame<cutFrame),boundaryKey];
+  layers.splice(layers.indexOf(layer)+1,0,right);selected=right.id;ensureProjectDuration();commit();renderAll();
+}
+function setLayerProperty(id,key,rawValue){
+  const layer=current();if(!layer) return;
+  const oldStart=layerStartFrame(layer);
+  const stringProps=['interpolation','blend'];
+  let value=stringProps.includes(key)?rawValue:finite(rawValue,layer[key]);
+  if(key==='start'){
+    const nextStart=Math.max(0,Math.round(value*fps()));const shift=nextStart-oldStart;
+    layer.start=nextStart/fps();layer.keys=layer.keys.map(k=>({...k,frame:Math.max(0,k.frame+shift)}));
+  }else if(key==='duration') layer.duration=Math.max(1/fps(),value);
+  else if(key==='opacity'||key==='blendStrength') layer[key]=clamp(value,0,100);
+  else if(key==='speed') layer.speed=Math.max(.01,value);
+  else if(key==='name') layer.name=String(rawValue||'Layer');
+  else layer[key]=value;
+  ensureProjectDuration();commit();renderAll();
+}
+$('layerName').addEventListener('change',e=>setLayerProperty('layerName','name',e.target.value));
+['x','y','scale','rotation','opacity','start','duration','speed','interpolation','blend','blendStrength'].forEach(id=>$(id).addEventListener('change',e=>setLayerProperty(id,id,e.target.value)));
+$('importBtn').onclick=()=>$('fileInput').click();
+$('fileInput').onchange=e=>{
+  [...e.target.files].forEach(file=>{
+    const url=URL.createObjectURL(file);const type=file.type.startsWith('video')?'video':file.type.startsWith('audio')?'audio':'image';let element=null;
+    if(type==='image'){element=new Image();element.src=url;element.onload=renderPreview;}
+    else if(type==='video'){element=document.createElement('video');element.src=url;element.muted=true;element.loop=true;element.playsInline=true;element.preload='metadata';element.onloadeddata=renderPreview;}
+    else element=new Audio(url);
+    makeLayer(type,file.name,element,file);
+  });e.target.value='';
+};
+$('addText').onclick=()=>$('addLayerBtn').click();
+$('addLayerBtn').onclick=()=>makeLayer('text','Text Layer');
+$('keyBtn').onclick=()=>{
+  const layer=current();if(!layer) return;
+  const start=layerStartFrame(layer),end=layerEndFrame(layer);
+  if(playheadFrame<start || playheadFrame>end-1) return;
+  const values=keyValues(layer,playheadFrame);
+  layer.keys=layer.keys.filter(key=>key.frame!==playheadFrame);
+  layer.keys.push({frame:playheadFrame,x:values.x,y:values.y,scale:values.scale,rotation:values.rotation,opacity:values.opacity});
+  layer.keys.sort((a,b)=>a.frame-b.frame);commit();renderAll();
+};
+$('duplicateBtn').onclick=()=>{
+  const layer=current();if(!layer) return;
+  const newStart=layerEndFrame(layer),shift=newStart-layerStartFrame(layer);
+  const copy=normalizeLayer({...layer,id:uid(),name:layer.name+' copy',start:newStart/fps(),keys:layer.keys.map(key=>({...key,frame:key.frame+shift}))});
+  copy.element=layer.element;layers.push(copy);selected=copy.id;ensureProjectDuration();commit();renderAll();
+};
+$('deleteBtn').onclick=()=>{if(!selected) return;layers=layers.filter(layer=>layer.id!==selected);selected=layers[0]?.id||null;ensureProjectDuration();commit();renderAll();};
+$('splitBtn').onclick=splitSelected;$('undoBtn').onclick=undo;$('redoBtn').onclick=redo;
+function setZoom(next){
+  const scroller=$('timelineScroll');const oldOrigin=timelineOrigin();const viewportX=oldOrigin+time()*zoom-scroller.scrollLeft;
+  zoom=clamp(Math.round(next),20,240);$('zoom').value=String(zoom);renderAll();
+  const newContentX=timelineOrigin()+time()*zoom;scroller.scrollLeft=Math.max(0,newContentX-viewportX);
+}
+$('zoom').oninput=e=>setZoom(+e.target.value);
+$('zoomIn').onclick=()=>setZoom(zoom+10);$('zoomOut').onclick=()=>setZoom(zoom-10);
+$('playheadHandle').onpointerdown=e=>beginScrub(e,'ruler');
+$('playBtn').onclick=()=>{
+  playing=!playing;$('playBtn').textContent=playing?'Ⅱ Pause':'▶ Play';
+  if(playing){playStartAt=performance.now();playStartFrame=playheadFrame;raf=requestAnimationFrame(tick);}else cancelAnimationFrame(raf);
+};
+$('stopBtn').onclick=()=>{playing=false;playheadFrame=0;$('playBtn').textContent='▶ Play';cancelAnimationFrame(raf);setPlayhead(0);};
+function tick(now){
+  if(!playing) return;
+  let next=playStartFrame+Math.round((now-playStartAt)/1000*fps());
+  const end=Math.round(project.duration*fps());
+  if(next>end){next=0;playStartFrame=0;playStartAt=now;}
+  setPlayhead(next);raf=requestAnimationFrame(tick);
+}
+$('fps').onchange=e=>{
+  const oldRate=fps(),nextRate=+e.target.value;
+  const ratio=nextRate/oldRate;project.fps=nextRate;
+  playheadFrame=Math.round(playheadFrame*ratio);
+  layers.forEach(layer=>layer.keys=layer.keys.map(key=>({...key,frame:Math.round(key.frame*ratio)})));
+  commit();renderAll();
+};
+$('resolution').onchange=e=>{const [w,h]=e.target.value.split('x').map(Number);project.width=w;project.height=h;canvas.width=w;canvas.height=h;commit();renderAll();};
+function serialize(){
+  return {app:'Flow Motion',schemaVersion:3,project:clone(project),selected,timeline:{fps:fps(),durationFrames:Math.round(project.duration*fps()),playheadFrame,zoom},layers:layers.map(layer=>normalizeLayer(layer)),assets:layers.filter(layer=>layer.assetId).map(layer=>({id:layer.assetId,type:layer.type,...(layer.media||{})}))};
+}
+function saveProject(){
+  const persistent=storageSet(STORAGE_KEYS[0],JSON.stringify(serialize()));$('projectLabel').textContent=persistent?'Saved locally':'Saved this session';
+}
+function downloadProject(){
+  const blob=new Blob([JSON.stringify(serialize(),null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const anchor=document.createElement('a');anchor.href=url;anchor.download=(project.name||'flow-motion-project').replace(/[^a-z0-9_-]+/gi,'_')+'.json';anchor.click();setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+function loadProjectData(data){
+  if(!data || !Array.isArray(data.layers)) throw new Error('This file is not a valid Flow Motion project.');
+  const incoming=data.project||{};
+  const nextFps=[24,30,60,120].includes(Number(incoming.fps))?Number(incoming.fps):30;
+  project={...DEFAULT_PROJECT,...incoming,fps:nextFps,width:Math.max(1,Math.round(finite(incoming.width,1920))),height:Math.max(1,Math.round(finite(incoming.height,1080))),duration:Math.max(1,finite(incoming.duration,20)),version:3};
+  layers=data.layers.map(raw=>normalizeLayer(raw));
+  selected=layers.some(layer=>layer.id===data.selected)?data.selected:(layers[0]?.id||null);
+  playheadFrame=clamp(Math.round(finite(data.timeline?.playheadFrame,0)),0,Math.round(project.duration*fps()));
+  zoom=clamp(finite(data.timeline?.zoom,60),20,240);
+  ensureProjectDuration();syncProjectControls();history=[];historyIndex=-1;commit();renderAll();
+}
+$('saveBtn').onclick=saveProject;$('exportBtn').onclick=downloadProject;
+$('openProjectBtn').onclick=()=>$('projectFileInput').click();
+$('projectFileInput').onchange=async e=>{
+  const file=e.target.files?.[0];if(!file) return;
+  if(layers.length && !confirm('Open this project and replace the current timeline?')){e.target.value='';return;}
+  try{const data=JSON.parse(await file.text());loadProjectData(data);$('projectLabel').textContent='Project opened';}
+  catch(error){console.error(error);$('projectLabel').textContent='Invalid project';}
+  e.target.value='';
+};
+function loadSavedProject(){
+  for(const key of STORAGE_KEYS){
+    const raw=storageGet(key);if(!raw) continue;
+    try{loadProjectData(JSON.parse(raw));return;}catch(error){console.warn('Could not load saved project from '+key,error);}
+  }
+}
+loadSavedProject();syncProjectControls();ensureProjectDuration();commit();renderAll();
+window.addEventListener('keydown',e=>{
+  const tag=document.activeElement?.tagName;
+  const editing=['INPUT','TEXTAREA','SELECT'].includes(tag) || document.activeElement?.isContentEditable;
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!editing){e.preventDefault();e.shiftKey?redo():undo();}
+  else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'&&!editing){e.preventDefault();redo();}
+  else if(e.code==='Space'&&!editing){e.preventDefault();$('playBtn').click();}
+  else if((e.key==='Delete'||e.key==='Backspace')&&!editing&&selected){e.preventDefault();$('deleteBtn').click();}
+  else if(!editing && (e.key==='ArrowLeft'||e.key==='ArrowRight')){e.preventDefault();setPlayhead(playheadFrame+(e.key==='ArrowRight'?1:-1)*(e.shiftKey?10:1));}
+  else if(!editing && e.key==='Home'){e.preventDefault();setPlayhead(0);}
+  else if(!editing && e.key==='End'){e.preventDefault();setPlayhead(Math.round(project.duration*fps()));}
+});
+window.FlowMotionDebug={getState:()=>({project:clone(project),layers:layers.map(normalizeLayer),selected,playheadFrame,zoom,historyLength:history.length,historyIndex}),setPlayhead,setZoom,splitSelected,undo,redo,serialize,loadProjectData};
+</script>
+<script>
+if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(err => console.warn("Offline install unavailable:", err)));
+}
+</script>
+</body></html>
